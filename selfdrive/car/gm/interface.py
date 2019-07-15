@@ -7,7 +7,7 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.gm.values import DBC, CAR, STOCK_CONTROL_MSGS, AUDIO_HUD, \
                                     SUPERCRUISE_CARS, AccState
 from selfdrive.car.gm.carstate import CarState, CruiseButtons, get_powertrain_can_parser
-from selfdrive.car import STD_CARGO_KG
+from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness
 
 
 class CanBus(object):

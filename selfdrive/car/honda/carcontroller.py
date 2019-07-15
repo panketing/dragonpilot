@@ -6,6 +6,8 @@ from selfdrive.car import create_gas_command
 from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import AH, CruiseButtons, CAR
 from selfdrive.can.packer import CANPacker
+from common.params import Params
+params = Params()
 
 
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
@@ -70,7 +72,7 @@ def process_hud_alert(hud_alert):
 
 HUDData = namedtuple("HUDData",
                      ["pcm_accel", "v_cruise", "mini_car", "car", "X4",
-                      "lanes", "beep", "chime", "fcw", "acc_alert", "steer_required"])
+                      "lanes", "beep", "chime", "fcw", "acc_alert", "steer_required", "dashed_lanes"])
 
 
 class CarController(object):
@@ -98,6 +100,9 @@ class CarController(object):
     self.lead_distance_counter += 1.0
     self.prev_lead_distance = lead_distance
     return self.rough_lead_speed
+
+    # dragonpilot
+    self.turning_signal_timer = 0
 
   def update(self, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
@@ -137,7 +142,7 @@ class CarController(object):
     fcw_display, steer_required, acc_alert = process_hud_alert(hud_alert)
 
     hud = HUDData(int(pcm_accel), int(round(hud_v_cruise)), 1, hud_car,
-                  0xc1, hud_lanes, int(snd_beep), snd_chime, fcw_display, acc_alert, steer_required)
+                  0xc1, hud_lanes, int(snd_beep), snd_chime, fcw_display, acc_alert, steer_required, CS.lkMode)
 
     # **** process the car messages ****
 
@@ -157,10 +162,18 @@ class CarController(object):
     apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
 
-    lkas_active = enabled and not CS.steer_not_allowed
+    lkas_active = enabled and not CS.steer_not_allowed and CS.lkMode
 
     # Send CAN commands.
     can_sends = []
+
+    # dragonpilot
+    if enabled and (CS.left_blinker_on > 0 or CS.right_blinker_on > 0) and params.get("DragonTempDisableSteerOnSignal") == "1":
+      self.turning_signal_timer = 100
+
+    if self.turning_signal_timer > 0:
+      self.turning_signal_timer -= 1
+      lkas_active = False
 
     # Send steering command.
     idx = frame % 4
