@@ -90,6 +90,9 @@ class CarController(object):
     self.lead_distance_counter_prev = 1
     self.rough_lead_speed = 0.0
 
+    # dragonpilot
+    self.turning_signal_timer = 0
+
   def rough_speed(self, lead_distance):
     if self.prev_lead_distance != lead_distance:
       self.lead_distance_counter_prev = self.lead_distance_counter
@@ -100,9 +103,6 @@ class CarController(object):
     self.lead_distance_counter += 1.0
     self.prev_lead_distance = lead_distance
     return self.rough_lead_speed
-
-    # dragonpilot
-    self.turning_signal_timer = 0
 
   def update(self, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
