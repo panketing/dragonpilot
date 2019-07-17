@@ -158,6 +158,8 @@ typedef struct UIScene {
   float alert_blinkingrate;
 
   float awareness_status;
+  float output_scale;
+  bool steerOverride;
 
   uint64_t started_ts;
 
@@ -912,9 +914,17 @@ const UIScene *scene = &s->scene;
   NVGpaint track_bg;
   if (is_mpc) {
     // Draw colored MPC track
-    const uint8_t *clr = bg_colors[s->status];
-    track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
-      nvgRGBA(clr[0], clr[1], clr[2], 255), nvgRGBA(clr[0], clr[1], clr[2], 255/2));
+    if (scene->steerOverride) {
+      track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
+        nvgRGBA(0, 191, 255, 255), nvgRGBA(0, 95, 128, 150));
+    } else {
+      int torque_scale = (int)fabs(510*(float)s->scene.output_scale);
+      int red_lvl = min(255, torque_scale);
+      int green_lvl = min(255, 510-torque_scale);
+      track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
+        nvgRGBA(          red_lvl,            green_lvl,  0, 255),
+        nvgRGBA((int)(0.5*red_lvl), (int)(0.5*green_lvl), 0, 150));
+    }
   } else {
     // Draw white vision track
     track_bg = nvgLinearGradient(s->vg, vwp_w, vwp_h, vwp_w, vwp_h*.4,
@@ -1327,7 +1337,7 @@ static void ui_draw_vision_event(UIState *s) {
     const int img_wheel_x = bg_wheel_x-(img_wheel_size/2);
     const int img_wheel_y = bg_wheel_y-25;
     float img_wheel_alpha = 0.1f;
-    bool is_engaged = (s->status == STATUS_ENGAGED);
+    bool is_engaged = (s->status == STATUS_ENGAGED) && !scene->steerOverride;
     bool is_warning = (s->status == STATUS_WARNING);
     bool is_engageable = scene->engageable;
     if (is_engaged || is_warning || is_engageable) {
@@ -1706,6 +1716,9 @@ void handle_message(UIState *s, void *which) {
     struct cereal_ControlsState datad;
     cereal_read_ControlsState(&datad, eventd.controlsState);
 
+    struct cereal_ControlsState_LateralPIDState pdata;
+    cereal_read_ControlsState_LateralPIDState(&pdata, datad.lateralControlState.pidState);
+
     if (datad.vCruise != s->scene.v_cruise) {
       s->scene.v_cruise_update_ts = eventd.logMonoTime;
     }
@@ -1716,6 +1729,8 @@ void handle_message(UIState *s, void *which) {
     s->scene.engageable = datad.engageable;
     s->scene.gps_planner_active = datad.gpsPlannerActive;
     s->scene.monitoring_active = datad.driverMonitoringOn;
+    s->scene.output_scale = pdata.output;
+    s->scene.steerOverride = datad.steerOverride;
 
     s->scene.frontview = datad.rearViewCam;
 
