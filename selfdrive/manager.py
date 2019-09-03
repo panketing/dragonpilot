@@ -120,6 +120,7 @@ managed_processes = {
   "sensord": ("selfdrive/sensord", ["./start_sensord.py"]),
   "gpsd": ("selfdrive/sensord", ["./start_gpsd.py"]),
   #"updated": "selfdrive.updated",
+  "dragonctrld": "selfdrive.dragonpilot.dragonctrld.dragonctrld",
   "dashcamd": "selfdrive.dragonpilot.dashcamd.dashcamd",
   "shutdownd": "selfdrive.dragonpilot.shutdownd.shutdownd",
   "appd": "selfdrive.dragonpilot.appd.appd",
@@ -378,6 +379,9 @@ def manager_thread():
 
   if os.getenv("NOBOARD") is None:
     start_managed_process("pandad")
+    kill_managed_process("dragonctrld")
+  else:
+    start_managed_process("dragonctrld")
 
   logger_dead = False
 

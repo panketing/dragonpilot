@@ -272,14 +272,6 @@ class CarController(object):
       for addr in TARGET_IDS:
         can_sends.append(create_video_target(frame//10, addr))
 
-    if frame % 100 == 0:
-      command = params.get("DragonToyotaCommand")
-      if not command == "":
-        addr, vl, bus = command.split(',')
-        can_sends.append(make_can_msg(addr, vl, bus, False))
-        # send command
-        params.put("DragonToyotaCommand", "")
-
     # ui mesg is at 100Hz but we send asap if:
     # - there is something to display
     # - there is something to stop displaying
