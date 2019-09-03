@@ -324,6 +324,7 @@ def data_send(sm, CS, CI, CP, VM, state, events, actuators, v_cruise_kph, rk, ca
   if not read_only:
     # send car controls over can
     can_sends = CI.apply(CC)
+    can_sends.append()
     sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
   force_decel = driver_status.awareness < 0.
